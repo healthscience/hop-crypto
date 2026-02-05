@@ -1,0 +1,15 @@
+{
+  "name": "hop-crypto",
+  "type": "module",
+  "version": "0.1.0",
+  "files": [
+    "hop_crypto_bg.wasm",
+    "hop_crypto.js",
+    "hop_crypto.d.ts"
+  ],
+  "main": "hop_crypto.js",
+  "types": "hop_crypto.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}

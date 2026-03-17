@@ -6,12 +6,37 @@ export class Encryption {
    * @param {any} instance - The data to hash
    * @returns {Buffer} The resulting hash as a Buffer
    */
-  createKey(instance) {
-    const buf = Buffer.from(JSON.stringify(instance))
+   createKey(instance) {
+    // 1. Ensure the object keys are always in the same order
+    const sorted = this._sortObject(instance)
+    const buf = Buffer.from(JSON.stringify(sorted))
+    
     const out = Buffer.alloc(sodium.crypto_generichash_BYTES)
-    // Using BLAKE2b (the Holepunch standard)
     sodium.crypto_generichash(out, buf)
-    return out // Return as Buffer for Hyperbee
+    return out 
+  }
+
+  /**
+   * sort JS object in standard way.
+   * @param {*} obj 
+   * @returns 
+   */ 
+  _sortObject(obj) {
+    if (obj === null || typeof obj !== 'object' || Array.isArray(obj)) return obj
+    return Object.keys(obj).sort().reduce((acc, key) => {
+      acc[key] = this._sortObject(obj[key]) // Recursive for nested BentoBoxDS
+      return acc
+    }, {})
+  }
+
+  /**
+   * Create a prefixed key for Hyperbee
+   * @param {string} prefix - The prefix (e.g., 'datatype')
+   * @param {Buffer} hash - The 32-byte hash
+   * @returns {Buffer} The prefixed key
+   */
+  createPrefixedKey(prefix, hash) {
+    return Buffer.concat([Buffer.from(prefix + '!'), hash])
   }
 
   /**

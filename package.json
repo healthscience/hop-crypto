@@ -1,15 +1,31 @@
 {
   "name": "hop-crypto",
   "type": "module",
-  "version": "0.1.0",
+  "version": "0.1.1",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "test": "vitest"
+  },
   "files": [
     "hop_crypto_bg.wasm",
     "hop_crypto.js",
-    "hop_crypto.d.ts"
+    "hop_crypto.d.ts",
+    "src/index.js"
   ],
   "main": "hop_crypto.js",
   "types": "hop_crypto.d.ts",
+  "exports": {
+    ".": {
+      "types": "./hop_crypto.d.ts",
+      "default": "./hop_crypto.js"
+    },
+    "./encryption": "./src/index.js"
+  },
   "sideEffects": [
     "./snippets/*"
-  ]
+  ],
+  "dependencies": {
+    "sodium-native": "^5.1.0"
+  }
 }

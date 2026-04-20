@@ -21,7 +21,7 @@ export class Encryption {
    * @param {any} instance - The data to hash
    * @returns {Buffer} The resulting 32-byte hash as a Buffer
    */
-  createDialogueKey(lsId, cueHash, heliStamp) {
+  createDialogueKey(lsId, cueHash, heliStamp, contentHash) {
     // 2. The Composite Formation (The 'When' & 'Where')
     // Using '!' as the hop-native delimiter for lifestrap extraction
     return `${lsId}!${cueHash}!${heliStamp}!${contentHash}`;

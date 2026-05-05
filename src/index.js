@@ -50,24 +50,41 @@ export class Encryption {
   }
 
   /**
-   * Create a Stitching Key (The Relational Synapse)
-   * Connects content to a Life-Strap.
-   * Format: [lsID]!link![itemHash]
-   */
-  createStitchKey(lsID, itemHash) {
-    const hashStr = Buffer.isBuffer(itemHash) ? itemHash.toString('hex') : itemHash
-    return Buffer.from(`${lsID}!link!${hashStr}`)
+   * Helper to ensure we have the raw 32-byte ID, stripping any prefix.
+  */
+  getRawID(input) {
+    // Prevent the 'undefined' crash
+    if (!input) return Buffer.alloc(32); 
+    
+    if (!Buffer.isBuffer(input)) input = Buffer.from(input);
+    
+    // If it's a prefixed key (e.g., lifestrap!HASH), slice the last 32 bytes
+    return input.length > 32 ? input.slice(-32) : input;
   }
 
   /**
-   * Create Range Boundaries for Hyperbee Streams
-   * Allows querying a full Life-Strap or a specific category within it.
+   * Create a Stitching Key (The Relational Synapse)
+   * Format: [32-byte lsHASH] !link! [32-byte itemHash]
    */
-  getRange(lsID, category = 'link') {
-    const prefix = `${lsID}!${category}!`
-    const gt = Buffer.from(prefix)
-    const lt = Buffer.concat([gt, Buffer.from([0xff])])
-    return { gt, lt }
+  createStitchKey(lsKey, itemHash) {
+    const head = this.getRawID(lsKey);
+    const mid = Buffer.from('!link!');
+    const tail = this.getRawID(itemHash);
+
+    return Buffer.concat([head, mid, tail]);
+  }
+
+  /**
+   * Range Query for Hyperbee
+   */
+  getRange(lsID) {
+    const rawHead = this.getRawID(lsID);
+    const separator = Buffer.from('!link!');
+    
+    const gt = Buffer.concat([rawHead, separator]);
+    const lt = Buffer.concat([gt, Buffer.from([0xff])]);
+    
+    return { gt, lt };
   }
 
   /**

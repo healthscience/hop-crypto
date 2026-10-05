@@ -64,27 +64,66 @@ export class Encryption {
 
   /**
    * Create a Stitching Key (The Relational Synapse)
-   * Format: [32-byte lsHASH] !link! [32-byte itemHash]
+   * Connects content to a Life-Strap.
+   * Format: [lsID]!link![itemHash]
    */
-  createStitchKey(lsKey, itemHash) {
-    const head = this.getRawID(lsKey);
-    const mid = Buffer.from('!link!');
-    const tail = this.getRawID(itemHash);
-
-    return Buffer.concat([head, mid, tail]);
+  createStitchKey(rawLsID, itemHash) {
+    const delimiter = Buffer.from('!link!');
+    return Buffer.concat([rawLsID, delimiter, itemHash]);
   }
 
   /**
-   * Range Query for Hyperbee
+   * Create Range Boundaries for Hyperbee Streams
+   * Allows querying a full Life-Strap or a specific binary category within it.
+  */
+  getRange(rootNamespace, subTarget) {
+    // 1. Root namespace gets the '!' delimiter
+    let gt = Buffer.isBuffer(rootNamespace)
+      ? Buffer.concat([rootNamespace, Buffer.from('!')])
+      : Buffer.from(`${rootNamespace}!`)
+    
+    // 2. Append subTarget cleanly. NO trailing '!' after the hash.
+    if (subTarget) {
+      const subBuf = Buffer.isBuffer(subTarget) 
+        ? subTarget 
+        : Buffer.from(subTarget)
+        
+      gt = Buffer.concat([gt, subBuf])
+    }
+    
+    // 3. Append explicit boundary cap
+    const lt = Buffer.concat([gt, Buffer.from([0xff])])
+    
+    return { gt, lt }
+  }
+
+  /**
+   * Prefix Range Query for Hyperbee (e.g. for root contracts)
    */
-  getRange(lsID) {
-    const rawHead = this.getRawID(lsID);
-    const separator = Buffer.from('!link!');
-    
-    const gt = Buffer.concat([rawHead, separator]);
+  getPrefixRange(prefix) {
+    const gt = Buffer.from(prefix + '!');
     const lt = Buffer.concat([gt, Buffer.from([0xff])]);
-    
     return { gt, lt };
+  }
+
+  /**
+   * Combine two hashes into a single deterministic 32-byte hash (Compound Cue)
+   * @param {Buffer|string} hashA - First hash
+   * @param {Buffer|string} hashB - Second hash
+   * @returns {Buffer} The resulting 32-byte hash
+   */
+  combineHashes(hashA, hashB) {
+    const bufA = Buffer.isBuffer(hashA) ? hashA : Buffer.from(hashA, 'hex');
+    const bufB = Buffer.isBuffer(hashB) ? hashB : Buffer.from(hashB, 'hex');
+    
+    // Sort buffers to ensure (A + B) generates the exact same hash as (B + A)
+    const sorted = Buffer.compare(bufA, bufB) < 0 
+      ? Buffer.concat([bufA, bufB]) 
+      : Buffer.concat([bufB, bufA]);
+      
+    const out = Buffer.alloc(sodium.crypto_generichash_BYTES);
+    sodium.crypto_generichash(out, sorted);
+    return out;
   }
 
   /**
